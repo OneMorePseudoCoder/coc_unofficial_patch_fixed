@@ -13,14 +13,6 @@ public:
 private:
     Estate m_state;
 
-    struct SEnertionState
-    {
-        float dist;
-        u32 time;
-    };
-
-    static SEnertionState m_etable[Estate::clbNoState][Estate::clbNoState];
-
     IClimableObject* m_ladder;
     CPHCharacter* m_character;
     Fvector m_start_position; // for depart state

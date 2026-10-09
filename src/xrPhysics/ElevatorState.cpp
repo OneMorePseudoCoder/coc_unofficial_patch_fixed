@@ -9,15 +9,17 @@
 #include "xrEngine/Statgraph.h"
 #include "debug_output.h"
 #endif
+
 static const float getting_on_dist = 0.3f;
 static const float getting_out_dist = 0.4f;
 static const float start_climbing_dist = 0.f;
 static const float stop_climbing_dist = 0.1f;
 static const float out_dist = 1.5f;
 
-static const float look_angle_cosine = 0.9238795f; // 22.5
-static const float lookup_angle_sine = 0.34202014f; // 20
+static const float look_angle_cosine = 0.9238795f;
+static const float lookup_angle_sine = 0.34202014f;
 extern class CPHWorld* ph_world;
+
 CElevatorState::CElevatorState()
 {
     m_state = clbNoLadder;
@@ -360,7 +362,14 @@ void CElevatorState::Deactivate()
     m_character = NULL;
 }
 
-CElevatorState::SEnertionState CElevatorState::m_etable[clbNoState][clbNoState] = {
+struct  SEnertionState 
+{
+	float dist;
+	u32 time;
+};
+
+static SEnertionState m_etable[clbNoState][clbNoState] =
+{
     //						clbNone			clbNearUp		clbNearDown		clbClimbingUp	clbClimbingDown	clbDepart
     // clbNoLadder
     /*clbNone			*/ {{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}, // clbNone
