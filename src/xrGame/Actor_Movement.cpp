@@ -19,10 +19,10 @@
 #include "CustomOutfit.h"
 #include "ActorBackpack.h"
 
-
 #ifdef DEBUG
 #include "phdebug.h"
 #endif
+
 static const float s_fLandingTime1 = 0.1f; // через сколько снять флаг Landing1 (т.е. включить следующую анимацию)
 static const float s_fLandingTime2 = 0.3f; // через сколько снять флаг Landing2 (т.е. включить следующую анимацию)
 static const float s_fJumpTime = 0.3f;
@@ -31,7 +31,7 @@ const float s_fFallTime = 0.2f;
 
 IC static void generate_orthonormal_basis1(const Fvector& dir, Fvector& updir, Fvector& right)
 {
-    right.crossproduct(dir, updir); //. <->
+    right.crossproduct(dir, updir);
     right.normalize();
     updir.crossproduct(right, dir);
 }
@@ -68,6 +68,7 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
             mstate_real &= ~(mcFall | mcJump);
         }
     }
+
     // закончить падение
     if (character_physics_support()->movement()->gcontact_Was)
     {
@@ -91,18 +92,17 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
         m_fJumpTime = s_fJumpTime;
         mstate_real &= ~(mcFall | mcJump);
     }
+
     if ((mstate_wf & mcJump) == 0)
         m_bJumpKeyPressed = FALSE;
 
     // Зажало-ли меня/уперся - не двигаюсь
-    if (((character_physics_support()->movement()->GetVelocityActual() < 0.2f) &&
-            (!(mstate_real & (mcFall | mcJump)))) ||
-        character_physics_support()->movement()->bSleep)
+    if (((character_physics_support()->movement()->GetVelocityActual() < 0.2f) && (!(mstate_real & (mcFall | mcJump)))) || character_physics_support()->movement()->bSleep)
     {
         mstate_real &= ~mcAnyMove;
     }
-    if (character_physics_support()->movement()->Environment() == CPHMovementControl::peOnGround ||
-        character_physics_support()->movement()->Environment() == CPHMovementControl::peAtWall)
+
+    if (character_physics_support()->movement()->Environment() == CPHMovementControl::peOnGround || character_physics_support()->movement()->Environment() == CPHMovementControl::peAtWall)
     {
         // если на земле гарантированно снимать флажок Jump
         if (((s_fJumpTime - m_fJumpTime) > s_fJumpGroundTime) && (mstate_real & mcJump))
@@ -111,6 +111,7 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
             m_fJumpTime = s_fJumpTime;
         }
     }
+
     if (character_physics_support()->movement()->Environment() == CPHMovementControl::peAtWall)
     {
         if (!(mstate_real & mcClimb))
@@ -414,6 +415,9 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector& vControlAccel, float& Ju
 
 #define ACTOR_ANIM_SECT "actor_animation"
 
+// Alex ADD: smooth crouch fix
+float cam_LookoutSpeed = 2.f;
+
 #define ACTOR_LLOOKOUT_ANGLE PI_DIV_4
 #define ACTOR_RLOOKOUT_ANGLE PI_DIV_4
 
@@ -467,8 +471,6 @@ void CActor::g_Orientate(u32 mstate_rl, float dt)
     XFORM().set(mXFORM);
     VERIFY(_valid(XFORM()));
 
-    //-------------------------------------------------
-
     float tgt_roll = 0.f;
     if (mstate_rl & mcLookout)
     {
@@ -477,12 +479,14 @@ void CActor::g_Orientate(u32 mstate_rl, float dt)
         if ((mstate_rl & mcLLookout) && (mstate_rl & mcRLookout))
             tgt_roll = 0.0f;
     }
+
     if (!fsimilar(tgt_roll, r_torso_tgt_roll, EPS))
     {
-        angle_lerp(r_torso_tgt_roll, tgt_roll, PI_MUL_2, dt);
+        r_torso_tgt_roll = angle_inertion_var(r_torso_tgt_roll, tgt_roll, 0.f, CurrentHeight * PI_MUL_2 * cam_LookoutSpeed, PI_DIV_2, dt);
         r_torso_tgt_roll = angle_normalize_signed(r_torso_tgt_roll);
     }
 }
+
 bool CActor::g_LadderOrient()
 {
     Fvector leader_norm;
@@ -501,24 +505,6 @@ bool CActor::g_LadderOrient()
     M.j.set(0.f, 1.f, 0.f);
     generate_orthonormal_basis1(M.k, M.j, M.i);
     M.i.invert();
-    // M.j.invert();
-
-    // Fquaternion q1,q2,q3;
-    // q1.set(XFORM());
-    // q2.set(M);
-    // q3.slerp(q1,q2,dt);
-    // Fvector angles1,angles2,angles3;
-    // XFORM().getHPB(angles1.x,angles1.y,angles1.z);
-    // M.getHPB(angles2.x,angles2.y,angles2.z);
-    ////angle_lerp(angles3.x,angles1.x,angles2.x,dt);
-    ////angle_lerp(angles3.y,angles1.y,angles2.y,dt);
-    ////angle_lerp(angles3.z,angles1.z,angles2.z,dt);
-
-    // angles3.lerp(angles1,angles2,dt);
-    ////angle_lerp(angles3.y,angles1.y,angles2.y,dt);
-    ////angle_lerp(angles3.z,angles1.z,angles2.z,dt);
-    // angle_lerp(angles3.x,angles1.x,angles2.x,dt);
-    // XFORM().setHPB(angles3.x,angles3.y,angles3.z);
     Fvector position;
     position.set(Position());
     // XFORM().rotation(q3);
@@ -529,6 +515,7 @@ bool CActor::g_LadderOrient()
     VERIFY(_valid(XFORM()));
     return true;
 }
+
 // ****************************** Update actor orientation according to camera orientation
 void CActor::g_cl_Orientate(u32 mstate_rl, float dt)
 {
@@ -548,8 +535,7 @@ void CActor::g_cl_Orientate(u32 mstate_rl, float dt)
     unaffected_r_torso.pitch = r_torso.pitch;
     unaffected_r_torso.roll = r_torso.roll;
 
-    CWeaponMagazined* pWM = smart_cast<CWeaponMagazined*>(
-        inventory().GetActiveSlot() != NO_ACTIVE_SLOT ? inventory().ItemFromSlot(inventory().GetActiveSlot()) : NULL);
+    CWeaponMagazined* pWM = smart_cast<CWeaponMagazined*>(inventory().GetActiveSlot() != NO_ACTIVE_SLOT ? inventory().ItemFromSlot(inventory().GetActiveSlot()) : NULL);
     if (pWM && pWM->GetCurrentFireMode() == 1 && eacFirstEye != cam_active)
     {
         Fvector dangle = weapon_recoil_last_delta();
@@ -570,7 +556,6 @@ void CActor::g_cl_Orientate(u32 mstate_rl, float dt)
         if (_abs(r_model_yaw - ty) > PI_DIV_4 / 3.f)
         {
             r_model_yaw_dest = ty;
-            //
             mstate_real |= mcTurn;
         }
         if (_abs(r_model_yaw - r_model_yaw_dest) < EPS_L)
@@ -592,9 +577,8 @@ void CActor::g_sv_Orientate(u32 /**mstate_rl/**/, float /**dt/**/)
     r_torso.pitch = unaffected_r_torso.pitch;
     r_torso.roll = unaffected_r_torso.roll;
 
-    CWeaponMagazined* pWM = smart_cast<CWeaponMagazined*>(
-        inventory().GetActiveSlot() != NO_ACTIVE_SLOT ? inventory().ItemFromSlot(inventory().GetActiveSlot()) : NULL);
-    if (pWM && pWM->GetCurrentFireMode() == 1 /* && eacFirstEye != cam_active*/)
+    CWeaponMagazined* pWM = smart_cast<CWeaponMagazined*>(inventory().GetActiveSlot() != NO_ACTIVE_SLOT ? inventory().ItemFromSlot(inventory().GetActiveSlot()) : NULL);
+    if (pWM && pWM->GetCurrentFireMode() == 1)
     {
         Fvector dangle = weapon_recoil_last_delta();
         r_torso.yaw += dangle.y;
@@ -621,32 +605,22 @@ bool isActorAccelerated(u32 mstate, bool ZoomMode)
 
 bool CActor::CanAccelerate()
 {
-    bool can_accel = !conditions().IsLimping() && !character_physics_support()->movement()->PHCapture() &&
-        (m_time_lock_accel < Device.dwTimeGlobal);
-
-    return can_accel;
+    return !conditions().IsLimping() && !character_physics_support()->movement()->PHCapture() && (m_time_lock_accel < Device.dwTimeGlobal);
 }
 
 bool CActor::CanRun()
 {
-    bool can_run = !IsZoomAimingMode() && !(mstate_real & mcLookout);
-    return can_run;
+    return !IsZoomAimingMode() && !(mstate_real & mcLookout);
 }
 
 bool CActor::CanSprint()
 {
-    bool can_Sprint = CanAccelerate() && !conditions().IsCantSprint() && CanRun() &&
-        !(mstate_real & mcLStrafe || mstate_real & mcRStrafe) && InventoryAllowSprint();
-
-    return can_Sprint && (m_block_sprint_counter <= 0);
+    return CanAccelerate() && !conditions().IsCantSprint() && CanRun() && !(mstate_real & mcLStrafe || mstate_real & mcRStrafe) && InventoryAllowSprint() && (m_block_sprint_counter <= 0);
 }
 
 bool CActor::CanJump()
 {
-    bool can_Jump = !conditions().IsCantSprint() && !character_physics_support()->movement()->PHCapture() &&
-        ((mstate_real & mcJump) == 0) && (m_fJumpTime <= 0.f) && !m_bJumpKeyPressed && !IsZoomAimingMode();
-
-    return can_Jump;
+    return !conditions().IsCantSprint() && !character_physics_support()->movement()->PHCapture() && ((mstate_real & mcJump) == 0) && (m_fJumpTime <= 0.f) && !m_bJumpKeyPressed && !IsZoomAimingMode();
 }
 
 bool CActor::CanMove()
@@ -686,12 +660,11 @@ void CActor::StopAnyMove()
 }
 
 bool CActor::is_jump() { return ((mstate_real & (mcJump | mcFall | mcLanding | mcLanding2)) != 0); }
-//максимальный переносимы вес
 
 float CActor::MaxCarryWeight() const
 {
 	float res = inventory().GetMaxWeight();
-	res      += get_additional_weight2();
+	res += get_additional_weight2();
 	return res;
 }
 
@@ -701,6 +674,7 @@ float CActor::MaxWalkWeight() const
     max_w += get_additional_weight();
     return max_w;
 }
+
 #include "artefact.h"
 float CActor::get_additional_weight() const
 {
