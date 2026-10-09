@@ -20,7 +20,6 @@ public:
         shared_str texture;
         shared_str shader;
         FactoryPtr<IFlareRender> m_pRender;
-        // ref_shader hShader;
         SFlare() { fOpacity = fRadius = fPosition = 0; }
     };
 
@@ -52,7 +51,6 @@ public:
     void SetGradient(float fMaxRadius, float fOpacity, LPCSTR tex_name, LPCSTR sh_name);
     void SetSource(float fRadius, BOOL ign_color, LPCSTR tex_name, LPCSTR sh_name);
     void AddFlare(float fRadius, float fOpacity, float fPosition, LPCSTR tex_name, LPCSTR sh_name);
-    // ref_shader CreateShader (LPCSTR tex_name, LPCSTR sh_name);
 
     shared_str section;
 
@@ -99,12 +97,10 @@ protected:
     float fGradientValue;
 
     FactoryPtr<ILensFlareRender> m_pRender;
-    // ref_geom hGeom;
 
     LensFlareDescVec m_Palette;
     CLensFlareDescriptor* m_Current;
 
-    //. #ifdef DEBUG
 public:
     enum LFState
     {
@@ -113,7 +109,6 @@ public:
         lfsHide,
         lfsShow,
     };
-    //. #endif // DEBUG
 
 protected:
     LFState m_State;

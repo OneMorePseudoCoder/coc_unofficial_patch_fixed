@@ -30,8 +30,8 @@ IGame_Level::IGame_Level()
 IGame_Level::~IGame_Level()
 {
     if (strstr(Core.Params, "-nes_texture_storing"))
-        // Device.Resources->StoreNecessaryTextures();
         GEnv.Render->ResourcesStoreNecessaryTextures();
+
     xr_delete(pLevel);
 
     // Render-level unload
@@ -41,7 +41,6 @@ IGame_Level::~IGame_Level()
     Device.seqRender.Remove(this);
     Device.seqFrame.Remove(this);
     CCameraManager::ResetPP();
-    ///////////////////////////////////////////
     GEnv.Sound->set_geometry_occ(nullptr);
     GEnv.Sound->set_handler(nullptr);
     Device.DumpResourcesMemoryUsage();
@@ -65,13 +64,12 @@ void IGame_Level::net_Stop()
     bReady = false;
 }
 
-//-------------------------------------------------------------------------------------------
-// extern CStatTimer tscreate;
 void __stdcall _sound_event(ref_sound_data_ptr S, float range)
 {
     if (g_pGameLevel && S && S->feedback)
         g_pGameLevel->SoundEvent_Register(S, range);
 }
+
 static void __stdcall build_callback(Fvector* V, int Vcnt, CDB::TRI* T, int Tcnt, void* params)
 {
     g_pGameLevel->Load_GameSpecific_CFORM(T, Tcnt);
@@ -101,7 +99,6 @@ bool IGame_Level::Load(u32 dwNum)
     g_pGamePersistent->SetLoadStageTitle("st_loading_cform");
     g_pGamePersistent->LoadTitle();
     ObjectSpace.Load(build_callback);
-    // GEnv.Sound->set_geometry_occ ( &Static );
     GEnv.Sound->set_geometry_occ(ObjectSpace.GetStaticModel());
     GEnv.Sound->set_handler(_sound_event);
 
@@ -113,14 +110,11 @@ bool IGame_Level::Load(u32 dwNum)
 
     // Render-level Load
     GEnv.Render->level_Load(LL_Stream);
-    // tscreate.FrameEnd ();
-    // Msg ("* S-CREATE: %f ms, %d times",tscreate.result,tscreate.count);
 
     // Objects
     g_pGamePersistent->Environment().mods_load();
     R_ASSERT(Load_GameSpecific_Before());
     Objects.Load();
-    //. ANDY R_ASSERT (Load_GameSpecific_After ());
 
     // Done
     FS.r_close(LL_Stream);
@@ -153,17 +147,10 @@ void IGame_Level::OnRender()
 #ifdef _GPA_ENABLED
     TAL_RetireID(rtID);
 #endif // _GPA_ENABLED
-
-    // Font
-    // pApp->pFontSystem->SetSizeI(0.023f);
-    // pApp->pFontSystem->OnRender();
 }
 
 void IGame_Level::OnFrame()
 {
-    // Log ("- level:on-frame: ",u32(Device.dwFrame));
-    // if (_abs(Device.fTimeDelta)<EPS_S) return;
-
     // Update all objects
     VERIFY(bReady);
     Objects.Update(false);
@@ -186,7 +173,6 @@ void IGame_Level::OnFrame()
 }
 
 void IGame_Level::DumpStatistics(IGameFont& font, IPerformanceAlert* alert) { Objects.DumpStatistics(font, alert); }
-// ==================================================================================================
 
 void CServerInfo::AddItem(LPCSTR name_, LPCSTR value_, u32 color_)
 {
@@ -234,13 +220,16 @@ void IGame_Level::SoundEvent_Register(ref_sound_data_ptr S, float range)
 {
     if (!g_bLoaded)
         return;
+
     if (!S)
         return;
+    
     if (S->g_object && S->g_object->getDestroy())
     {
         S->g_object = 0;
         return;
     }
+    
     if (0 == S->feedback)
         return;
 
