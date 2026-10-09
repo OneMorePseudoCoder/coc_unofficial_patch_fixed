@@ -60,7 +60,6 @@ void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3
     else
         RCache.set_RT(NULL, 2);
     RCache.set_ZB(zb);
-    //	RImplementation.rmNormal				();
 }
 
 void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, ID3DDepthStencilView* zb)
@@ -102,28 +101,23 @@ void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, ID3DDepthStencil
     else
         RCache.set_RT(NULL, 1);
     RCache.set_ZB(zb);
-    //	RImplementation.rmNormal				();
 }
 
 void CRenderTarget::u_setrt(u32 W, u32 H, ID3DRenderTargetView* _1, ID3DRenderTargetView* _2, ID3DRenderTargetView* _3,
     ID3DDepthStencilView* zb)
 {
-    // VERIFY									(_1);
     dwWidth = W;
     dwHeight = H;
-    // VERIFY									(_1);
     RCache.set_RT(_1, 0);
     RCache.set_RT(_2, 1);
     RCache.set_RT(_3, 2);
     RCache.set_ZB(zb);
-    //	RImplementation.rmNormal				();
 }
 
 void CRenderTarget::u_stencil_optimize(eStencilOptimizeMode eSOM)
 {
     //	TODO: DX10: remove half pixel offset?
     VERIFY(RImplementation.o.nvstencil);
-    // RCache.set_ColorWriteEnable	(FALSE);
     u32 Offset;
     float _w = float(Device.dwWidth);
     float _h = float(Device.dwHeight);
@@ -157,14 +151,7 @@ void CRenderTarget::u_stencil_optimize(eStencilOptimizeMode eSOM)
 // 2D texgen (texture adjustment matrix)
 void CRenderTarget::u_compute_texgen_screen(Fmatrix& m_Texgen)
 {
-    // float	_w						= float(Device.dwWidth);
-    // float	_h						= float(Device.dwHeight);
-    // float	o_w						= (.5f / _w);
-    // float	o_h						= (.5f / _h);
-    Fmatrix m_TexelAdjust = {0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-        //	Removing half pixel offset
-        // 0.5f + o_w,			0.5f + o_h,			0.0f,			1.0f
-        0.5f, 0.5f, 0.0f, 1.0f};
+    Fmatrix m_TexelAdjust = {0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f};
     m_Texgen.mul(m_TexelAdjust, RCache.xforms.m_wvp);
 }
 
@@ -172,16 +159,13 @@ void CRenderTarget::u_compute_texgen_screen(Fmatrix& m_Texgen)
 void CRenderTarget::u_compute_texgen_jitter(Fmatrix& m_Texgen_J)
 {
     // place into	0..1 space
-    Fmatrix m_TexelAdjust = {
-        0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f};
+    Fmatrix m_TexelAdjust = {0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f};
     m_Texgen_J.mul(m_TexelAdjust, RCache.xforms.m_wvp);
 
     // rescale - tile it
     float scale_X = float(Device.dwWidth) / float(TEX_jitter);
     float scale_Y = float(Device.dwHeight) / float(TEX_jitter);
-    // float	offset			= (.5f / float(TEX_jitter));
     m_TexelAdjust.scale(scale_X, scale_Y, 1.f);
-    // m_TexelAdjust.translate_over(offset,	offset,	0	);
     m_Texgen_J.mulA_44(m_TexelAdjust);
 }
 
@@ -191,12 +175,14 @@ u8 fpack(float v)
     clamp(_v, 0, 255);
     return u8(_v);
 }
+
 u8 fpackZ(float v)
 {
     s32 _v = iFloor(_abs(v) * 255.f + .5f);
     clamp(_v, 0, 255);
     return u8(_v);
 }
+
 Fvector vunpack(s32 x, s32 y, s32 z)
 {
     Fvector pck;
@@ -205,7 +191,9 @@ Fvector vunpack(s32 x, s32 y, s32 z)
     pck.z = -float(z) / 255.f;
     return pck;
 }
+
 Fvector vunpack(Ivector src) { return vunpack(src.x, src.y, src.z); }
+
 Ivector vpack(Fvector src)
 {
     Fvector _v;
@@ -313,7 +301,6 @@ CRenderTarget::CRenderTarget()
 
     param_color_base = color_rgba(127, 127, 127, 0);
     param_color_gray = color_rgba(85, 85, 85, 0);
-    // param_color_add		= color_rgba(0,0,0,			0);
     param_color_add.set(0.0f, 0.0f, 0.0f);
 
     dwAccumulatorClearMark = 0;
@@ -332,6 +319,11 @@ CRenderTarget::CRenderTarget()
         b_bloom_msaa = new CBlender_bloom_build_msaa();
         b_postprocess_msaa = new CBlender_postprocess_msaa();
     }
+	else
+	{
+        b_bloom_msaa = nullptr;
+        b_postprocess_msaa = nullptr;		
+	}
     b_luminance = new CBlender_luminance();
     b_combine = new CBlender_combine();
     b_ssao = new CBlender_SSAO_noMSAA();
@@ -357,20 +349,15 @@ CRenderTarget::CRenderTarget()
             b_accum_mask_msaa[i] = new CBlender_accum_direct_mask_msaa();
             b_accum_direct_msaa[i] = new CBlender_accum_direct_msaa();
             b_accum_direct_volumetric_msaa[i] = new CBlender_accum_direct_volumetric_msaa();
-            // b_accum_direct_volumetric_sun_msaa[i]	= new CBlender_accum_direct_volumetric_sun_msaa			();
             b_accum_spot_msaa[i] = new CBlender_accum_spot_msaa();
             b_accum_volumetric_msaa[i] = new CBlender_accum_volumetric_msaa();
             b_accum_point_msaa[i] = new CBlender_accum_point_msaa();
             b_accum_reflected_msaa[i] = new CBlender_accum_reflected_msaa();
             b_ssao_msaa[i] = new CBlender_SSAO_MSAA();
             static_cast<CBlender_accum_direct_mask_msaa*>(b_accum_mask_msaa[i])->SetDefine("ISAMPLE", SampleDefs[i]);
-            static_cast<CBlender_accum_direct_volumetric_msaa*>(b_accum_direct_volumetric_msaa[i])
-                ->SetDefine("ISAMPLE", SampleDefs[i]);
-            // static_cast<CBlender_accum_direct_volumetric_sun_msaa*>(b_accum_direct_volumetric_sun_msaa[i])->SetDefine(
-            // "ISAMPLE", SampleDefs[i]);
+            static_cast<CBlender_accum_direct_volumetric_msaa*>(b_accum_direct_volumetric_msaa[i])->SetDefine("ISAMPLE", SampleDefs[i]);
             static_cast<CBlender_accum_direct_msaa*>(b_accum_direct_msaa[i])->SetDefine("ISAMPLE", SampleDefs[i]);
-            static_cast<CBlender_accum_volumetric_msaa*>(b_accum_volumetric_msaa[i])
-                ->SetDefine("ISAMPLE", SampleDefs[i]);
+            static_cast<CBlender_accum_volumetric_msaa*>(b_accum_volumetric_msaa[i])->SetDefine("ISAMPLE", SampleDefs[i]);
             static_cast<CBlender_accum_spot_msaa*>(b_accum_spot_msaa[i])->SetDefine("ISAMPLE", SampleDefs[i]);
             static_cast<CBlender_accum_point_msaa*>(b_accum_point_msaa[i])->SetDefine("ISAMPLE", SampleDefs[i]);
             static_cast<CBlender_accum_reflected_msaa*>(b_accum_reflected_msaa[i])->SetDefine("ISAMPLE", SampleDefs[i]);
@@ -437,7 +424,6 @@ CRenderTarget::CRenderTarget()
             rt_Generic_1_r.create(r2_RT_generic1_r, w, h, D3DFMT_A8R8G8B8, SampleCount);
         }
         //	Igor: for volumetric lights
-        // rt_Generic_2.create			(r2_RT_generic2,w,h,D3DFMT_A8R8G8B8		);
         //	temp: for higher quality blends
         if (RImplementation.o.advancedpp)
             rt_Generic_2.create(r2_RT_generic2, w, h, D3DFMT_A16B16G16R16F, SampleCount);
@@ -466,8 +452,6 @@ CRenderTarget::CRenderTarget()
             s_create_minmax_sm.create(&TempBlender, "null");
         }
 
-        // rt_smap_surf.create			(r2_RT_smap_surf,			size,size,nullrt		);
-        // rt_smap_ZB					= NULL;
         s_accum_mask.create(b_accum_mask, "r3\\accum_mask");
         s_accum_direct.create(b_accum_direct, "r3\\accum_direct");
 
@@ -507,8 +491,6 @@ CRenderTarget::CRenderTarget()
 
                 for (int i = 0; i < bound; ++i)
                 {
-                    // s_accum_direct_volumetric_msaa[i].create		(b_accum_direct_volumetric_sun_msaa[i],
-                    // "r3\\accum_direct");
                     s_accum_direct_volumetric_msaa[i].create(snames[i]);
                     manually_assign_texture(s_accum_direct_volumetric_msaa[i], "s_smap", smapTarget);
                 }
@@ -519,15 +501,6 @@ CRenderTarget::CRenderTarget()
     {
         //	TODO: DX10: Check if we need old-style SMap
         VERIFY(!"Use HW SMAPs only!");
-        // u32	size					=RImplementation.o.smapsize	;
-        // rt_smap_surf.create			(r2_RT_smap_surf,			size,size,D3DFMT_R32F);
-        // rt_smap_depth				= NULL;
-        // R_CHK						(HW.pDevice->CreateDepthStencilSurface
-        // (size,size,D3DFMT_D24X8,D3DMULTISAMPLE_NONE,0,TRUE,&rt_smap_ZB,NULL));
-        // s_accum_mask.create			(b_accum_mask,				"r2\\accum_mask");
-        // s_accum_direct.create		(b_accum_direct,			"r2\\accum_direct");
-        // if (RImplementation.o.advancedpp)
-        //	s_accum_direct_volumetric.create("accum_volumetric_sun");
     }
 
     //	RAIN
@@ -553,7 +526,6 @@ CRenderTarget::CRenderTarget()
                 s_rain_msaa[i].create(&TempBlender[i], "null");
                 s_accum_spot_msaa[i].create(b_accum_spot_msaa[i], "r2\\accum_spot_s", "lights\\lights_spot01");
                 s_accum_point_msaa[i].create(b_accum_point_msaa[i], "r2\\accum_point_s");
-                // s_accum_volume_msaa[i].create(b_accum_direct_volumetric_msaa[i], "lights\\lights_spot01");
                 s_accum_volume_msaa[i].create(b_accum_volumetric_msaa[i], "lights\\lights_spot01");
                 s_combine_msaa[i].create(b_combine_msaa[i], "r2\\combine");
             }
@@ -609,13 +581,10 @@ CRenderTarget::CRenderTarget()
 
     // BLOOM
     {
-        D3DFORMAT fmt = D3DFMT_A8R8G8B8; //;		// D3DFMT_X8R8G8B8
+        D3DFORMAT fmt = D3DFMT_A8R8G8B8;
         u32 w = BLOOM_size_X, h = BLOOM_size_Y;
-        u32 fvf_build = D3DFVF_XYZRHW | D3DFVF_TEX4 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE2(1) |
-            D3DFVF_TEXCOORDSIZE2(2) | D3DFVF_TEXCOORDSIZE2(3);
-        u32 fvf_filter = (u32)D3DFVF_XYZRHW | D3DFVF_TEX8 | D3DFVF_TEXCOORDSIZE4(0) | D3DFVF_TEXCOORDSIZE4(1) |
-            D3DFVF_TEXCOORDSIZE4(2) | D3DFVF_TEXCOORDSIZE4(3) | D3DFVF_TEXCOORDSIZE4(4) | D3DFVF_TEXCOORDSIZE4(5) |
-            D3DFVF_TEXCOORDSIZE4(6) | D3DFVF_TEXCOORDSIZE4(7);
+        u32 fvf_build = D3DFVF_XYZRHW | D3DFVF_TEX4 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE2(1) | D3DFVF_TEXCOORDSIZE2(2) | D3DFVF_TEXCOORDSIZE2(3);
+        u32 fvf_filter = (u32)D3DFVF_XYZRHW | D3DFVF_TEX8 | D3DFVF_TEXCOORDSIZE4(0) | D3DFVF_TEXCOORDSIZE4(1) | D3DFVF_TEXCOORDSIZE4(2) | D3DFVF_TEXCOORDSIZE4(3) | D3DFVF_TEXCOORDSIZE4(4) | D3DFVF_TEXCOORDSIZE4(5) | D3DFVF_TEXCOORDSIZE4(6) | D3DFVF_TEXCOORDSIZE4(7);
         rt_Bloom_1.create(r2_RT_bloom1, w, h, fmt);
         rt_Bloom_2.create(r2_RT_bloom2, w, h, fmt);
         g_bloom_build.create(fvf_build, RCache.Vertex.Buffer(), RCache.QuadIB);
@@ -647,8 +616,6 @@ CRenderTarget::CRenderTarget()
             string256 name;
             xr_sprintf(name, "%s_%d", r2_RT_luminance_pool, it);
             rt_LUM_pool[it].create(name, 1, 1, D3DFMT_R32F);
-            // u_setrt						(rt_LUM_pool[it],	0,	0,	0			);
-            // CHK_DX						(HW.pDevice->Clear( 0L, NULL, D3DCLEAR_TARGET,	0x7f7f7f7f,	1.0f, 0L));
             FLOAT ColorRGBA[4] = {127.0f / 255.0f, 127.0f / 255.0f, 127.0f / 255.0f, 127.0f / 255.0f};
             HW.pContext->ClearRenderTargetView(rt_LUM_pool[it]->pRT, ColorRGBA);
         }
@@ -696,24 +663,12 @@ CRenderTarget::CRenderTarget()
         {
             rt_ssao_temp.create(r2_RT_ssao_temp, w, h, D3DFMT_G16R16F, SampleCount);
             s_ssao.create(b_ssao, "r2\\ssao");
-
-
-            /* Should be used in r4_rendertarget_phase_ssao.cpp but it's commented there.
-            if (RImplementation.o.dx10_msaa)
-            {
-                const int bound = RImplementation.o.dx10_msaa_opt ? 1 : RImplementation.o.dx10_msaa_samples;
-
-                for (int i = 0; i < bound; ++i)
-                    s_ssao_msaa[i].create(b_ssao_msaa[i], "null");
-            }*/
         }
     }
 
     // COMBINE
     {
-        static D3DVERTEXELEMENT9 dwDecl[] = {
-            {0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0}, // pos+uv
-            D3DDECL_END()};
+        static D3DVERTEXELEMENT9 dwDecl[] = {{0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0}, D3DDECL_END()};
         s_combine.create(b_combine, "r2\\combine");
         s_combine_volumetric.create("combine_volumetric");
         s_combine_dbg_0.create("effects\\screen_set", r2_RT_smap_surf);
@@ -724,13 +679,10 @@ CRenderTarget::CRenderTarget()
         g_combine_2UV.create(FVF::F_TL2uv, RCache.Vertex.Buffer(), RCache.QuadIB);
         g_combine_cuboid.create(dwDecl, RCache.Vertex.Buffer(), RCache.Index.Buffer());
 
-        u32 fvf_aa_blur = D3DFVF_XYZRHW | D3DFVF_TEX4 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE2(1) |
-            D3DFVF_TEXCOORDSIZE2(2) | D3DFVF_TEXCOORDSIZE2(3);
+        u32 fvf_aa_blur = D3DFVF_XYZRHW | D3DFVF_TEX4 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE2(1) | D3DFVF_TEXCOORDSIZE2(2) | D3DFVF_TEXCOORDSIZE2(3);
         g_aa_blur.create(fvf_aa_blur, RCache.Vertex.Buffer(), RCache.QuadIB);
 
-        u32 fvf_aa_AA = D3DFVF_XYZRHW | D3DFVF_TEX7 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE2(1) |
-            D3DFVF_TEXCOORDSIZE2(2) | D3DFVF_TEXCOORDSIZE2(3) | D3DFVF_TEXCOORDSIZE2(4) | D3DFVF_TEXCOORDSIZE4(5) |
-            D3DFVF_TEXCOORDSIZE4(6);
+        u32 fvf_aa_AA = D3DFVF_XYZRHW | D3DFVF_TEX7 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE2(1) | D3DFVF_TEXCOORDSIZE2(2) | D3DFVF_TEXCOORDSIZE2(3) | D3DFVF_TEXCOORDSIZE2(4) | D3DFVF_TEXCOORDSIZE4(5) | D3DFVF_TEXCOORDSIZE4(6);
         g_aa_AA.create(fvf_aa_AA, RCache.Vertex.Buffer(), RCache.QuadIB);
 		
         t_envmap_0.create(r2_T_envs0);
@@ -758,15 +710,6 @@ CRenderTarget::CRenderTarget()
         }
         // Build material(s)
         {
-            //	Create immutable texture.
-            //	So we need to init data _before_ the creation.
-            // Surface
-            // R_CHK
-            // (D3DXCreateVolumeTexture(HW.pDevice,TEX_material_LdotN,TEX_material_LdotH,4,1,0,D3DFMT_A8L8,D3DPOOL_MANAGED,&t_material_surf));
-            // t_material					= dxRenderDeviceRender::Instance().Resources->_CreateTexture(r2_material);
-            // t_material->surface_set		(t_material_surf);
-            //	Use DXGI_FORMAT_R8G8_UNORM
-
             u16 tempData[TEX_material_LdotN * TEX_material_LdotH * TEX_material_Count];
 
             D3D_TEXTURE3D_DESC desc;
@@ -787,8 +730,6 @@ CRenderTarget::CRenderTarget()
             subData.SysMemSlicePitch = desc.Height * subData.SysMemPitch;
 
             // Fill it (addr: x=dot(L,N),y=dot(L,H))
-            // D3DLOCKED_BOX				R;
-            // R_CHK						(t_material_surf->LockBox	(0,&R,0,0));
             for (u32 slice = 0; slice < TEX_material_Count; slice++)
             {
                 for (u32 y = 0; y < TEX_material_LdotH; y++)
@@ -845,39 +786,15 @@ CRenderTarget::CRenderTarget()
                     }
                 }
             }
-            // R_CHK		(t_material_surf->UnlockBox	(0));
 
             R_CHK(HW.pDevice->CreateTexture3D(&desc, &subData, &t_material_surf));
             t_material = RImplementation.Resources->_CreateTexture(r2_material);
             t_material->surface_set(t_material_surf);
-            // R_CHK
-            // (D3DXCreateVolumeTexture(HW.pDevice,TEX_material_LdotN,TEX_material_LdotH,4,1,0,D3DFMT_A8L8,D3DPOOL_MANAGED,&t_material_surf));
-            // t_material					= dxRenderDeviceRender::Instance().Resources->_CreateTexture(r2_material);
-            // t_material->surface_set		(t_material_surf);
-
-            // #ifdef DEBUG
-            // R_CHK	(D3DXSaveTextureToFile	("x:\\r2_material.dds",D3DXIFF_DDS,t_material_surf,0));
-            // #endif
         }
 
         // Build noise table
         if (1)
         {
-            // Surfaces
-            // D3DLOCKED_RECT				R[TEX_jitter_count];
-
-            // for (int it=0; it<TEX_jitter_count; it++)
-            //{
-            //	string_path					name;
-            //	xr_sprintf						(name,"%s%d",r2_jitter,it);
-            //	R_CHK	(D3DXCreateTexture
-            //(HW.pDevice,TEX_jitter,TEX_jitter,1,0,D3DFMT_Q8W8V8U8,D3DPOOL_MANAGED,&t_noise_surf[it]));
-            //	t_noise[it]					= dxRenderDeviceRender::Instance().Resources->_CreateTexture	(name);
-            //	t_noise[it]->surface_set	(t_noise_surf[it]);
-            //	R_CHK						(t_noise_surf[it]->LockRect	(0,&R[it],0,0));
-            //}
-            //	Use DXGI_FORMAT_R8G8B8A8_SNORM
-
             static const int sampleSize = 4;
             u32 tempData[TEX_jitter_count][TEX_jitter * TEX_jitter];
 
@@ -889,7 +806,6 @@ CRenderTarget::CRenderTarget()
             desc.SampleDesc.Count = 1;
             desc.SampleDesc.Quality = 0;
             desc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
-            // desc.Usage = D3D_USAGE_IMMUTABLE;
             desc.Usage = D3D_USAGE_DEFAULT;
             desc.BindFlags = D3D_BIND_SHADER_RESOURCE;
             desc.CPUAccessFlags = 0;
@@ -919,20 +835,13 @@ CRenderTarget::CRenderTarget()
                 }
             }
 
-            // for (int it=0; it<TEX_jitter_count; it++)	{
-            //	R_CHK						(t_noise_surf[it]->UnlockRect(0));
-            //}
-
             for (int it = 0; it < TEX_jitter_count - 1; it++)
             {
                 string_path name;
                 xr_sprintf(name, "%s%d", r2_jitter, it);
-                // R_CHK	(D3DXCreateTexture
-                // (HW.pDevice,TEX_jitter,TEX_jitter,1,0,D3DFMT_Q8W8V8U8,D3DPOOL_MANAGED,&t_noise_surf[it]));
                 R_CHK(HW.pDevice->CreateTexture2D(&desc, &subData[it], &t_noise_surf[it]));
                 t_noise[it] = RImplementation.Resources->_CreateTexture(name);
                 t_noise[it]->surface_set(t_noise_surf[it]);
-                // R_CHK						(t_noise_surf[it]->LockRect	(0,&R[it],0,0));
             }
 
             float tempDataHBAO[TEX_jitter * TEX_jitter * 4];
@@ -946,7 +855,6 @@ CRenderTarget::CRenderTarget()
             descHBAO.SampleDesc.Count = 1;
             descHBAO.SampleDesc.Quality = 0;
             descHBAO.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-            // desc.Usage = D3D_USAGE_IMMUTABLE;
             descHBAO.Usage = D3D_USAGE_DEFAULT;
             descHBAO.BindFlags = D3D_BIND_SHADER_RESOURCE;
             descHBAO.CPUAccessFlags = 0;
@@ -983,8 +891,6 @@ CRenderTarget::CRenderTarget()
 
             string_path name;
             xr_sprintf(name, "%s%d", r2_jitter, it);
-            // R_CHK	(D3DXCreateTexture
-            // (HW.pDevice,TEX_jitter,TEX_jitter,1,0,D3DFMT_Q8W8V8U8,D3DPOOL_MANAGED,&t_noise_surf[it]));
             R_CHK(HW.pDevice->CreateTexture2D(&descHBAO, &subData[it], &t_noise_surf[it]));
             t_noise[it] = RImplementation.Resources->_CreateTexture(name);
             t_noise[it]->surface_set(t_noise_surf[it]);
@@ -998,7 +904,6 @@ CRenderTarget::CRenderTarget()
                 t_noise_mipped->surface_set(t_noise_surf_mipped);
 
                 //	Update texture. Generate mips.
-
                 HW.pContext->CopySubresourceRegion(t_noise_surf_mipped, 0, 0, 0, 0, t_noise_surf[0], 0, 0);
 
                 D3DX11FilterTexture(HW.pContext, t_noise_surf_mipped, 0, D3DX10_FILTER_POINT);
@@ -1008,8 +913,7 @@ CRenderTarget::CRenderTarget()
 
     // PP
     s_postprocess.create("postprocess");
-    g_postprocess.create(
-        D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX3, RCache.Vertex.Buffer(), RCache.QuadIB);
+    g_postprocess.create(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX3, RCache.Vertex.Buffer(), RCache.QuadIB);
 
     // Menu
     s_menu.create("distort");
@@ -1047,16 +951,12 @@ CRenderTarget::~CRenderTarget()
     if (pSurf)
         pSurf->Release();
     _SHOW_REF("t_envmap_1 - #small", pSurf);
-//_SHOW_REF("t_envmap_0 - #small",t_envmap_0->pSurface);
-//_SHOW_REF("t_envmap_1 - #small",t_envmap_1->pSurface);
+
 #endif // DEBUG
     t_envmap_0->surface_set(NULL);
     t_envmap_1->surface_set(NULL);
     t_envmap_0.destroy();
     t_envmap_1.destroy();
-
-    //	TODO: DX10: Check if we need old style SMAPs
-    //	_RELEASE					(rt_smap_ZB);
 
     // Jitter
     for (int it = 0; it < TEX_jitter_count; it++)
@@ -1074,7 +974,6 @@ CRenderTarget::~CRenderTarget()
 #endif // DEBUG
     _RELEASE(t_noise_surf_mipped);
 
-    //
     accum_spot_geom_destroy();
     accum_omnip_geom_destroy();
     accum_point_geom_destroy();
@@ -1103,13 +1002,14 @@ CRenderTarget::~CRenderTarget()
             xr_delete(b_accum_direct_msaa[i]);
             xr_delete(b_accum_mask_msaa[i]);
             xr_delete(b_accum_direct_volumetric_msaa[i]);
-            // xr_delete					(b_accum_direct_volumetric_sun_msaa[i]);
             xr_delete(b_accum_spot_msaa[i]);
             xr_delete(b_accum_volumetric_msaa[i]);
             xr_delete(b_accum_point_msaa[i]);
             xr_delete(b_accum_reflected_msaa[i]);
             xr_delete(b_ssao_msaa[i]);
         }
+		xr_delete(b_postprocess_msaa);
+		xr_delete(b_bloom_msaa);
     }
     xr_delete(b_accum_mask);
     xr_delete(b_occq);
@@ -1152,7 +1052,6 @@ void CRenderTarget::increment_light_marker()
 {
     dwLightMarkerID += 2;
 
-    // if (dwLightMarkerID>10)
     const u32 iMaxMarkerValue = RImplementation.o.dx10_msaa ? 127 : 255;
 
     if (dwLightMarkerID > iMaxMarkerValue)

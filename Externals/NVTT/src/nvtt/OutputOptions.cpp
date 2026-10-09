@@ -25,7 +25,6 @@
 
 using namespace nvtt;
 
-
 OutputOptions::OutputOptions() : m(*new OutputOptions::Private())
 {
 	reset();
@@ -44,7 +43,6 @@ void OutputOptions::reset()
 	m.errorHandler = NULL;
 	m.outputHeader = true;
 }
-
 
 /// Set output file name.
 void OutputOptions::setFileName(const char * fileName)
@@ -72,7 +70,6 @@ void OutputOptions::setOutputHeader(bool outputHeader)
 	m.outputHeader = outputHeader;
 }
 
-
 bool OutputOptions::Private::openFile() const
 {
 	if (!fileName.isNull())
@@ -82,6 +79,7 @@ bool OutputOptions::Private::openFile() const
 		DefaultOutputHandler * oh = new DefaultOutputHandler(fileName.str());
 		if (oh->stream.isError())
 		{
+			delete oh;
 			return false;
 		}
 		

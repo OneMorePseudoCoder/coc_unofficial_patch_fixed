@@ -47,11 +47,15 @@ IC ref_sound* CSoundPlayer::CSoundCollection::add(ESoundTypes type, LPCSTR name)
     ref_sound* temp = new ref_sound();
     temp->create(name, st_Effect, type);
     if (!temp->_p)
-        return (0);
+	{
+		xr_delete(temp);
+		return nullptr;
+	}
     return (temp);
 }
 
 IC const CSoundPlayer::SOUND_COLLECTIONS& CSoundPlayer::objects() const { return (m_sounds); }
+
 IC bool CSoundPlayer::active_sound_type(u32 synchro_mask) const
 {
     xr_vector<CSoundSingle>::const_iterator I = m_playing_sounds.begin();
